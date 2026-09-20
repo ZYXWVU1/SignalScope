@@ -129,8 +129,8 @@ Try the navigation and **Check connection** button.
 | `CORS_ORIGINS` | `[]` initially; replace with the exact Vercel origin after step 5       |
 | `FRONTEND_URL` | Leave unset initially; set to the Vercel production origin after step 5 |
 
-Provider keys are not needed for this foundation. Add `ALPHA_VANTAGE_API_KEY`, `NEWS_API_KEY`,
-and pacing settings when their collectors exist. Do not define a fixed `PORT`; Railway provides it.
+Provider keys are required before stock/news collection. Add `ALPHA_VANTAGE_API_KEY`,
+`NEWS_API_KEY`, and pacing/public URL settings for gaming. Do not define a fixed `PORT`; Railway provides it.
 
 6. Verify the deployment settings loaded from the committed configuration:
 

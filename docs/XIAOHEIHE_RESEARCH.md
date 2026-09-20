@@ -31,6 +31,7 @@ The endpoint can be exercised without touching a website by injecting a mocked c
 
 Set `XHH_PUBLIC_POST_URLS` to a JSON list of known public post URLs for a controlled first run,
 or set `XHH_PUBLIC_FEED_URL` to a public page that the site rules allow the operator to collect.
+With neither setting, the finite command records a successful empty run and makes no request.
 Do not add guessed API routes. If the official site requires JavaScript or authentication to
 display a feed, leave the collector empty and document the limitation rather than bypassing it.
 
