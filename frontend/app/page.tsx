@@ -1,11 +1,15 @@
 import Link from "next/link";
-import { getHealth } from "@/lib/api";
+import { getDashboard, getHealth } from "@/lib/api";
 import { Refresh } from "@/components/refresh";
 
 export const dynamic = "force-dynamic";
 
 export default async function Overview() {
   const connected = await getHealth();
+  const dashboard = connected ? await getDashboard() : null;
+  const stocks = dashboard?.stocks ?? [];
+  const technologyNews = dashboard?.technologyNews ?? [];
+  const gaming = dashboard?.gaming ?? [];
   return (
     <>
       <div className="heading">
@@ -38,16 +42,27 @@ export default async function Overview() {
       </div>
       <section className="stats" aria-label="Data sources">
         {[
-          ["Markets", "Your personal market radar", "↗"],
-          ["Technology", "Keep up with what’s next", "▤"],
-          ["Gaming", "Community signals, in focus", "◇"],
+          ["Markets", "Your personal market radar", "↗", stocks.length],
+          [
+            "Technology",
+            "Keep up with what’s next",
+            "▤",
+            technologyNews.length,
+          ],
+          ["Gaming", "Community signals, in focus", "◇", gaming.length],
         ].map(([name, description, icon]) => (
           <article className="panel stat" key={name}>
             <div className="stat-top">
               <span>{name}</span>
               <span className="tile-icon">{icon}</span>
             </div>
-            <div className="big-number">—</div>
+            <div className="big-number">
+              {icon === "↗"
+                ? stocks.length
+                : icon === "▤"
+                  ? technologyNews.length
+                  : gaming.length}
+            </div>
             <p>{description}</p>
             <span className="muted">Not collecting yet</span>
           </article>
@@ -61,8 +76,16 @@ export default async function Overview() {
           </div>
           <div className="empty">
             <span className="empty-icon">↗</span>
-            <h3>Your watchlist starts here</h3>
-            <p>Stock search and monitoring arrive in the next phase.</p>
+            <h3>
+              {stocks.length
+                ? `${stocks.length} monitored stock${stocks.length === 1 ? "" : "s"}`
+                : "Your watchlist starts here"}
+            </h3>
+            <p>
+              {stocks.length
+                ? stocks.map((stock) => stock.symbol).join(" · ")
+                : "Add a stock in Settings, then run the stock collector."}
+            </p>
             <Link className="text-link" href="/settings">
               Watchlist settings →
             </Link>

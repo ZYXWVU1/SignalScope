@@ -1,4 +1,5 @@
 from alembic import context
+from app import models  # noqa: F401
 from app.database.session import Base, engine
 
 if context.is_offline_mode():

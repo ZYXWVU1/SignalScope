@@ -266,6 +266,68 @@ p {
   background: var(--soft);
   border-radius: 14px;
 }
+.data-panel {
+  margin-top: 30px;
+  overflow: hidden;
+}
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  padding: 22px;
+}
+.data-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.data-card p,
+.data-row p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.data-value {
+  text-align: right;
+  font-size: 20px;
+  font-weight: 600;
+}
+.data-value small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+.data-list {
+  display: grid;
+}
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.data-row:last-child {
+  border-bottom: 0;
+}
+.data-row h3 {
+  margin: 10px 0 4px;
+}
+.data-row p {
+  max-width: 740px;
+}
+.row-meta {
+  text-align: right;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+  white-space: nowrap;
+}
 .empty p {
   color: var(--muted);
   font-size: 13px;

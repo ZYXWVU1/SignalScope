@@ -1,8 +1,8 @@
 # Cloud setup: Supabase → Railway → Vercel
 
-This guide deploys the **existing foundation**. Data collectors, watchlist management,
-charts, and domain storage are not implemented in this checkout. Creating hosting services
-will not create those features. Keep all work in the current SignalScope repository.
+This guide deploys the existing foundation and its restored finite collectors. The frontend
+still needs live-data presentation work, but collectors, domain tables, APIs, and run logging
+are now present. Keep all work in the current SignalScope repository.
 
 ## 1. Connect the existing GitHub repository
 
@@ -78,6 +78,7 @@ uvicorn app.main:app --reload
 ```
 
 Open `http://localhost:8000/health`. It must return HTTP 200 and `{"status":"ok"}`.
+Then open `/health/db`; every returned table value must be `true` before running collectors.
 In another terminal using the same virtual environment:
 
 ```powershell
@@ -86,8 +87,8 @@ pytest tests/test_database_integration.py
 Remove-Item Env:RUN_DATABASE_TESTS
 ```
 
-The existing migration only creates Alembic revision tracking. No domain tables should be
-manually invented in the Supabase Table Editor. Subsequent product phases will add migrations.
+The migration chain creates Alembic revision tracking and the stock/news/gaming/run tables.
+Do not manually invent tables in the Supabase Table Editor.
 Use a separate Supabase project for production once you deploy real application data.
 
 ## 3. Verify local Next.js
@@ -122,10 +123,10 @@ Try the navigation and **Check connection** button.
    `.python-version` selects Python 3.12. No custom Dockerfile or database service is needed.
 5. Add these service variables directly in Railway:
 
-| Variable | Value |
-| --- | --- |
-| `DATABASE_URL` | Production Supabase session-pooler URI, configured privately |
-| `CORS_ORIGINS` | `[]` initially; replace with the exact Vercel origin after step 5 |
+| Variable       | Value                                                                   |
+| -------------- | ----------------------------------------------------------------------- |
+| `DATABASE_URL` | Production Supabase session-pooler URI, configured privately            |
+| `CORS_ORIGINS` | `[]` initially; replace with the exact Vercel origin after step 5       |
 | `FRONTEND_URL` | Leave unset initially; set to the Vercel production origin after step 5 |
 
 Provider keys are not needed for this foundation. Add `ALPHA_VANTAGE_API_KEY`, `NEWS_API_KEY`,
@@ -141,8 +142,9 @@ Healthcheck: /health
 ```
 
 7. Deploy. A failed migration must prevent the new API deployment from becoming ready.
-8. Under service networking, generate a public HTTPS domain. Open `<RAILWAY_API_ORIGIN>/health`
-   and `<RAILWAY_API_ORIGIN>/docs`. Require HTTP 200 before moving to Vercel.
+8. Under service networking, generate a public HTTPS domain. Open `<RAILWAY_API_ORIGIN>/health`,
+   `<RAILWAY_API_ORIGIN>/health/db`, and `<RAILWAY_API_ORIGIN>/docs`. Require HTTP 200 before
+   moving to Vercel.
 9. Verify GitHub automatic deployments target the intended production branch. Enable waiting
    for CI checks if available in your project settings.
 
@@ -177,18 +179,20 @@ but the explicit allowlist is also tested for future browser-to-API endpoints.
    from the expected commit. Verify `/health` and the frontend again after deployment.
 
 Railway and Vercel operate in the cloud; the website no longer depends on your computer once
-these deployments are running. Automatic **collection** still depends on the missing collectors.
+these deployments are running. Automatic **collection** still depends on enabling the tested
+Railway cron services below.
 
 ## Future collector services
 
-**Do not enable these jobs yet.** The following commands and tables do not exist in this
-checkout. This is the target configuration after each collector has been implemented and tested.
+**Do not enable these jobs yet.** First run all three commands locally against Supabase and
+verify their records through `/api/collector-status` and the domain endpoints. These are the
+Railway service settings after each collector has passed.
 
-| Separate Railway service | Command | Cron schedule (UTC) |
-| --- | --- | --- |
-| Stocks | `python -m scripts.collect_stocks` | `0 * * * *` |
-| Technology news | `python -m scripts.collect_news` | `15 * * * *` |
-| Gaming | `python -m scripts.collect_gaming` | `30 */2 * * *` |
+| Separate Railway service | Command                            | Cron schedule (UTC) |
+| ------------------------ | ---------------------------------- | ------------------- |
+| Stocks                   | `python -m scripts.collect_stocks` | `0 * * * *`         |
+| Technology news          | `python -m scripts.collect_news`   | `15 * * * *`        |
+| Gaming                   | `python -m scripts.collect_gaming` | `30 */2 * * *`      |
 
 Each future service uses the same repository and `/backend` root, plus its own cron config.
 Do not reuse the API's `railway.json`: that file starts Uvicorn, runs migrations, and requires
@@ -202,10 +206,11 @@ the run finishes and released in `finally`. No Redis or background infinite loop
 
 Railway skips a scheduled launch if the previous execution is still running. Database locking
 will additionally protect against manual or other-service overlap. Show last successful collection
-from stored run records, not from Railway APIs. No such records exist in the current foundation.
+from stored run records, not from Railway APIs.
 
-There is no current Xiaoheihe or Playwright integration to migrate. Its public-access research
-must occur before implementation; no browser runtime is required for this deployment.
+The Xiaoheihe implementation uses the documented public JSON-LD HTML method and no browser
+runtime. If the configured public page does not expose records, it records a successful empty
+run rather than inventing endpoints or bypassing access controls.
 
 ## Troubleshooting and final acceptance
 

@@ -2,10 +2,10 @@
 
 Market, technology news, and gaming intelligence, built on Next.js and FastAPI.
 
-**Current implementation: foundation shell.** This checkout has five dashboard routes, backend
-health checks, SQLAlchemy, and a baseline Alembic migration. Stock/news/gaming data features
-and collectors do not exist yet. Deployment configuration is prepared; cloud deployment and
-a live Supabase connection are still pending.
+**Current implementation: foundation plus standalone collectors.** This checkout has five
+dashboard routes, FastAPI APIs, SQLAlchemy/Alembic domain tables, provider-backed stock/news
+collectors, and a conservative public-HTML Xiaoheihe collector. Cloud deployment and a live
+Supabase connection are still pending.
 
 No Docker or local PostgreSQL installation is required. Use Python 3.12, Node.js 22, and
 hosted Supabase PostgreSQL.
@@ -84,16 +84,16 @@ The frontend has no implicit localhost API fallback.
 
 ## Environment variables
 
-| Location | Variable | Purpose |
-| --- | --- | --- |
-| Root `.env` / Railway | `DATABASE_URL` | Private Supabase session-pooler or direct PostgreSQL URI |
-| Root `.env` / Railway | `CORS_ORIGINS` | JSON array of exact frontend origins; defaults to none |
-| Root `.env` / Railway | `FRONTEND_URL` | One additional exact frontend origin |
-| Frontend `.env.local` / Vercel | `NEXT_PUBLIC_API_URL` | Public FastAPI origin; HTTPS Railway origin on Vercel |
-| Railway | `PORT` | Supplied by Railway; used by Uvicorn |
-| Root `.env` / future collectors | `ALPHA_VANTAGE_API_KEY`, `NEWS_API_KEY` | Reserved provider credentials |
-| Root `.env` / future collectors | `XHH_REQUEST_DELAY_SECONDS` | Reserved request pacing |
-| Root `.env` / future collectors | `NEWS_COLLECTION_INTERVAL`, `STOCK_COLLECTION_INTERVAL` | Reserved interval settings; do not schedule anything yet |
+| Location                        | Variable                                                | Purpose                                                  |
+| ------------------------------- | ------------------------------------------------------- | -------------------------------------------------------- |
+| Root `.env` / Railway           | `DATABASE_URL`                                          | Private Supabase session-pooler or direct PostgreSQL URI |
+| Root `.env` / Railway           | `CORS_ORIGINS`                                          | JSON array of exact frontend origins; defaults to none   |
+| Root `.env` / Railway           | `FRONTEND_URL`                                          | One additional exact frontend origin                     |
+| Frontend `.env.local` / Vercel  | `NEXT_PUBLIC_API_URL`                                   | Public FastAPI origin; HTTPS Railway origin on Vercel    |
+| Railway                         | `PORT`                                                  | Supplied by Railway; used by Uvicorn                     |
+| Root `.env` / Railway           | `ALPHA_VANTAGE_API_KEY`, `NEWS_API_KEY`                 | Provider credentials                                     |
+| Root `.env` / Railway           | `XHH_REQUEST_DELAY_SECONDS`, `XHH_PUBLIC_FEED_URL`, `XHH_PUBLIC_POST_URLS` | Public collection settings |
+| Root `.env` / Railway cron      | `NEWS_COLLECTION_INTERVAL`, `STOCK_COLLECTION_INTERVAL` | Deployment cadence documentation                         |
 
 Frontend variables never contain database URLs, passwords, or provider keys.
 Changing a public Next.js variable on Vercel requires a new build/deployment.
@@ -101,11 +101,11 @@ Vercel builds reject a missing, non-HTTPS, or loopback API origin.
 
 ## Production configuration
 
-| Service | Repository root directory | Configuration |
-| --- | --- | --- |
-| Railway API | `/backend` | Config file path `/backend/railway.json`; Railpack |
-| Vercel frontend | `frontend` | `frontend/vercel.json`; Next.js preset |
-| Supabase | Hosted project | Existing Alembic migration applied through Railway pre-deploy |
+| Service         | Repository root directory | Configuration                                                 |
+| --------------- | ------------------------- | ------------------------------------------------------------- |
+| Railway API     | `/backend`                | Config file path `/backend/railway.json`; Railpack            |
+| Vercel frontend | `frontend`                | `frontend/vercel.json`; Next.js preset                        |
+| Supabase        | Hosted project            | Existing Alembic migration applied through Railway pre-deploy |
 
 Railway installs `requirements.txt`, runs `alembic upgrade head` before deployment,
 and starts `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
@@ -155,19 +155,32 @@ it never downgrades a shared database. No production scheduling runs in Actions.
 
 - `GET /live`: process liveness.
 - `GET /health`: database and baseline migration readiness; returns 503 on failure.
+- `GET /health/db`: readiness plus required-table status without connection details.
 - `GET /docs`: generated API documentation.
+- `GET /api/dashboard`, `/api/stocks`, `/api/news`, `/api/gaming`, `/api/gaming/trending`.
+- `GET /api/watchlist`, `POST /api/watchlist`, `DELETE /api/watchlist/{symbol}`.
+- `GET /api/collector-status` shows the last finite run for each collector.
 - Overview, Stocks, Tech News, Gaming, Settings navigation, responsive light/dark styling,
   offline/error/loading/empty states, and existing text are preserved.
 
 ## Collection and remaining work
 
-There are no collector commands in this checkout. Do not activate cron services until the
-stock, news, and gaming collectors are implemented and tested. Future schedules belong in
-Railway Cron only; see [the setup guide](docs/CLOUD_SETUP.md#future-collector-services).
+The finite collector commands are available from `backend` and do not run when a page opens:
+
+```powershell
+python -m scripts.collect_stocks
+python -m scripts.collect_news
+python -m scripts.collect_gaming
+```
+
+They share the Supabase `DATABASE_URL`, record success/failure in `collector_runs`, use
+database advisory locks to prevent overlap, deduplicate snapshots/articles/posts, and exit.
+Do not activate Railway cron services until each command has passed against Supabase. Future
+schedules belong in Railway Cron only; see [the setup guide](docs/CLOUD_SETUP.md#future-collector-services).
 
 The application will use APIs whenever possible and only collect publicly accessible web data
-where necessary. Xiaoheihe access research must precede any parser or browser deployment.
-No AI tokens are used by this foundation.
+where necessary. Xiaoheihe access research precedes its conservative public JSON-LD parser.
+No AI tokens are used by these collectors.
 
 [Migration audit](docs/NO_DOCKER_MIGRATION.md) ·
 [Implementation status](docs/IMPLEMENTATION_STATUS.md) ·

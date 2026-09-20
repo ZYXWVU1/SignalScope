@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     database_url: SecretStr
     cors_origins: list[str] = []
     frontend_url: str = ""
+    alpha_vantage_api_key: str = ""
+    news_api_key: str = ""
+    xhh_request_delay_seconds: float = 3.0
+    xhh_public_feed_url: str = "https://xiaoheihe.cn/"
+    xhh_public_post_urls: list[str] = []
 
     @field_validator("database_url")
     @classmethod

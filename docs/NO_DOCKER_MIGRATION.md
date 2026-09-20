@@ -17,8 +17,9 @@ tool caches, and build output are not application source.
 - `backend/alembic/`: one empty baseline migration establishing revision tracking.
   **No domain models or application data tables exist.**
 - `backend/tests/`: three unit tests and one opt-in PostgreSQL integration test.
-- No collector scripts, parsers, external provider adapters, collector run logs, locks,
-  scheduler loops, APScheduler, or GitHub collection schedules exist.
+- The original checkout had no collector scripts, parsers, external provider adapters, collector
+  run logs, locks, scheduler loops, or GitHub collection schedules. This migration now adds
+  finite provider-backed commands and domain tables; cloud schedules remain disabled.
 - No Git remote, deployment configuration for cloud providers, or local database credentials
   are configured. No cloud deployment can be identified from this repository.
 
@@ -42,23 +43,23 @@ in `VERIFICATION.md`. A real database connection has never been verified in this
 
 ## Files to modify
 
-| Files | Migration |
-| --- | --- |
-| `backend/app/config.py`, `database/session.py` | Required cloud URL, psycopg normalization, TLS, bounded pool, explicit CORS |
-| Root `.env.example` | Hosted database configuration; remove local database credentials |
-| `frontend/lib/api.ts`, `.env.example` | Central `NEXT_PUBLIC_API_URL`; remove localhost fallback |
-| `frontend/next.config.ts`, `package.json` | Standard Next.js build/start for Vercel and local Node |
-| `.github/workflows/ci.yml` | Unit checks without a database service; explicitly gated cloud integration |
-| `backend/railway.json`, `.python-version` (new) | Railpack build, migration pre-deploy, `$PORT`, health check |
-| `frontend/vercel.json` (new) | Next.js project defaults; root directory is configured in Vercel |
-| Tests and documentation | Configuration/CORS regressions and accurate cloud setup/status |
+| Files                                           | Migration                                                                   |
+| ----------------------------------------------- | --------------------------------------------------------------------------- |
+| `backend/app/config.py`, `database/session.py`  | Required cloud URL, psycopg normalization, TLS, bounded pool, explicit CORS |
+| Root `.env.example`                             | Hosted database configuration; remove local database credentials            |
+| `frontend/lib/api.ts`, `.env.example`           | Central `NEXT_PUBLIC_API_URL`; remove localhost fallback                    |
+| `frontend/next.config.ts`, `package.json`       | Standard Next.js build/start for Vercel and local Node                      |
+| `.github/workflows/ci.yml`                      | Unit checks without a database service; explicitly gated cloud integration  |
+| `backend/railway.json`, `.python-version` (new) | Railpack build, migration pre-deploy, `$PORT`, health check                 |
+| `frontend/vercel.json` (new)                    | Next.js project defaults; root directory is configured in Vercel            |
+| Tests and documentation                         | Configuration/CORS regressions and accurate cloud setup/status              |
 
 ## Files that remain unchanged
 
 Keep the UI, routes, components, styling, dependency strategy, SQLAlchemy Base, existing
 Alembic revision and migration template, health response contract, and existing Git history.
-Do not add the Supabase JS SDK or rebuild the app. No existing stock/news/gaming logic exists
-to rewrite or remove. No production cron jobs should be enabled until real collectors exist.
+Do not add the Supabase JS SDK or rebuild the app. No prior stock/news/gaming implementation
+was present to rewrite. The recreated collectors must pass live Supabase tests before cron.
 
 ## Database and deployment changes
 

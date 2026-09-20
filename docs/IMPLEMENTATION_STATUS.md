@@ -1,10 +1,12 @@
 # Implementation status
 
-## Existing functionality preserved
+## Existing functionality preserved and restored
 
 Next.js App Router, TypeScript, Tailwind, five navigation routes, responsive system theme,
 server-only backend health request, and loading/error/empty/offline states. FastAPI retains
-`/live`, `/health`, explicit CORS, SQLAlchemy/psycopg, and the original baseline migration.
+`/live`, `/health`, explicit CORS, SQLAlchemy/psycopg, and the original migration chain. Domain
+tables, API routes, provider abstractions, parser tests, and three finite collector entry points
+now exist.
 
 ## No-Docker migration
 
@@ -25,11 +27,12 @@ existing GitHub repository, configured, deployed, and tested with their public U
 The user's migration request replaces the original Docker acceptance path. Native startup
 has been checked, but the foundation still needs a real migrated cloud database.
 
-## Features not present in this checkout
+## Remaining product work
 
-Stock search/watchlist/history/charts, news collection/filtering/deduplication, Xiaoheihe
-research/collection/metrics/trends, domain data tables, collector logs and overlapping-run
-protection, dashboard data API, and cron jobs. These were absent before migration and remain
-future implementation work. No existing data was deleted or tables recreated.
+Frontend data cards, charts, richer filters, provider credentials, live Supabase verification,
+and Railway/Vercel deployment remain. The Xiaoheihe feed is intentionally conservative and
+requires a configured public URL; it does not bypass access controls. No existing data was
+deleted or tables manually recreated.
 
-Deploying the current code publishes the foundation shell only, not a complete data product.
+Deploying the current code publishes the foundation plus backend collection APIs. It is not
+yet the complete dashboard product until live data is verified through the UI.
