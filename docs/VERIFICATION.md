@@ -1,41 +1,37 @@
-# Foundation verification — 2026-09-20
+# Verification — no-Docker migration, 2026-09-20
 
-All project files and local dependency/tool caches are contained in `SignalScope`.
+## Baseline before changes
+
+Commit `ca197d1`: backend 3 tests passed / 1 database integration skipped; Ruff and mypy
+passed; Next.js lint and production build passed. Earlier native startup and browser inspection
+confirmed the dashboard offline state and Settings navigation. A real database was not verified.
+
+## Migration checks
 
 | Check | Result |
 | --- | --- |
-| Backend pytest | 3 passed; real PostgreSQL test skipped |
+| Backend unit tests | 17 passed; 1 real database integration test skipped |
+| Frontend deployment/API configuration tests | 9 passed |
 | Ruff lint and formatting | Passed |
-| Mypy strict checks | Passed |
-| Alembic PostgreSQL offline migration SQL | Generated successfully |
-| Uvicorn startup | Passed |
-| Live HTTP `/live` | 200, `{"status":"ok"}` |
-| Live HTTP `/health` without PostgreSQL | 503, as expected |
-| Frontend ESLint | Passed |
-| Frontend TypeScript | Passed |
-| Next.js production build | Passed, all five routes generated |
-| Standalone production server | Started successfully |
-| Live frontend HTTP checks | All five routes returned HTTP 200 |
-| Browser inspection | Dashboard offline/empty state rendered; Settings navigation worked |
-| npm installation audit | 0 known vulnerabilities reported at install time |
-| Docker Compose / live PostgreSQL integration | Not run: Docker/PostgreSQL unavailable in this environment |
-| CI | Added, not run remotely |
-| Deployment | Not performed |
+| Mypy | Passed |
+| Next.js lint and production build | Passed; all five routes compiled |
+| Native Uvicorn startup | Passed without container runtime |
+| Native standard `npm start` | Passed without standalone-copy wrapper |
+| HTTP `/live` | 200 and expected JSON |
+| HTTP `/health` with test-only unreachable database | 503, as expected |
+| Frontend HTTP routes | All five returned 200; overview displayed offline state |
+| Native allowed-origin CORS preflight | Passed |
+| Supabase connection and Alembic application | Pending private database configuration |
+| Railway / Vercel deployment | Pending user-created projects and GitHub linkage |
+| Cloud collector execution | Not available; collector scripts do not exist |
+| GitHub workflow execution | Configuration prepared; not run remotely |
 
-The Python tests emitted upstream Starlette/httpx and AnyIO deprecation warnings.
-These did not fail the tests. Provider APIs were not called, and no API keys were required.
+The unreachable database used for smoke checks was an explicit test-only `.invalid` hostname,
+not a connection to Supabase. These checks do not establish cloud readiness.
 
-**Phase 1 is not yet accepted.** A healthy real PostgreSQL connection remains required.
-The source brief explicitly prohibits moving to the stock phase until the foundation works.
+Upstream Starlette/httpx and AnyIO deprecation warnings remain non-failing.
+Node's TypeScript test loader also emits a non-failing module-type inference warning.
+The UI and existing migration revision were preserved.
+No database schema or cloud account was mutated by the local migration checks.
 
-Next acceptance command, after Docker is available, from the project root:
-
-```powershell
-Copy-Item .env.example .env # only if .env does not already exist
-docker compose up --build -d
-Invoke-RestMethod http://localhost:8000/health
-```
-
-Confirm the dashboard reports a connection and run the PostgreSQL integration test
-using the README instructions. Docker build, migrations against PostgreSQL, and container
-health dependencies are configured but have not been validated by this local run.
+See [cloud setup](CLOUD_SETUP.md) for the remaining live acceptance steps.

@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node scripts/start.mjs",
+    "start": "next start",
     "lint": "eslint .",
+    "test": "node --experimental-strip-types --conditions=react-server --test tests/*.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -22,7 +22,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="SignalScope API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=settings.allowed_origins,
     allow_credentials=False,
     allow_methods=["GET"],
     allow_headers=["Content-Type"],

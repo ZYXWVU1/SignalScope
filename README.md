@@ -1,57 +1,55 @@
 # SignalScope
 
-A market, technology news, and gaming intelligence dashboard built in independently verified phases.
+Market, technology news, and gaming intelligence, built on Next.js and FastAPI.
 
-**Current status: Phase 1 foundation; not a completed or deployed MVP.** See
-[implementation status](docs/IMPLEMENTATION_STATUS.md) for the acceptance gate and remaining work.
+**Current implementation: foundation shell.** This checkout has five dashboard routes, backend
+health checks, SQLAlchemy, and a baseline Alembic migration. Stock/news/gaming data features
+and collectors do not exist yet. Deployment configuration is prepared; cloud deployment and
+a live Supabase connection are still pending.
+
+No Docker or local PostgreSQL installation is required. Use Python 3.12, Node.js 22, and
+hosted Supabase PostgreSQL.
 
 ## Architecture
 
 ```mermaid
-flowchart LR
-  Browser --> Next[Next.js dashboard]
-  Next --> API[FastAPI]
-  API --> DB[(PostgreSQL)]
-  Migrations[Alembic migration job] --> DB
-  Scheduler[Future cloud scheduler] -.-> Collectors[Independent stock / news / gaming collectors]
-  Collectors -.-> DB
+flowchart TD
+  GitHub[Existing GitHub repository] --> Vercel[Vercel · Next.js]
+  GitHub --> Railway[Railway · FastAPI]
+  Browser[User browser] --> Vercel
+  Vercel --> Railway
+  Railway --> Supabase[(Supabase PostgreSQL)]
+  GitHub -. future .-> Cron[Railway cron collectors]
+  Cron -. future .-> Supabase
 ```
 
-The frontend calls the backend from the Next.js server. Credentials are never placed in
-public frontend environment variables. Future collectors will run independently from
-web requests, with no AI tokens used for normal collection.
+The frontend still checks FastAPI from its server. Only the public API origin is exposed
+through `NEXT_PUBLIC_API_URL`; database credentials and provider keys stay backend-side.
+No provider calls or scraping happen on page load.
 
-## Start with Docker
+## Start here
 
-Requirements: Docker Engine / Docker Desktop with Compose v2. From this folder:
+Follow [the step-by-step cloud setup guide](docs/CLOUD_SETUP.md) to create your Supabase,
+Railway, and Vercel projects using your existing GitHub repository.
+
+This local repository currently has no Git remote. Do not create a replacement repository
+or force-push over an existing one. The guide explains how to link the existing repository.
+
+## Local backend
+
+Create a Supabase development project and copy its **Connect → Session pooler** URI.
+From the `SignalScope` root, copy the example only if you do not already have `.env`:
 
 ```powershell
 Copy-Item .env.example .env
-docker compose up --build -d
-docker compose ps
-Invoke-RestMethod http://localhost:8000/health
 ```
 
-Open [the dashboard](http://localhost:3000) or [API docs](http://localhost:8000/docs).
-The health response must be `{"status":"ok"}`. The migration service exiting with code 0
-is expected. The dashboard remains available if the backend later becomes unavailable.
+Edit `.env` privately. Set `DATABASE_URL` to your Supabase PostgreSQL URI, with the
+`postgresql+psycopg://` scheme and `?sslmode=require`. Do not post it in chat or commit it.
+The backend also accepts standard `postgresql://` and normalizes the driver.
+TLS is required; stronger `verify-full` settings are preserved.
 
 ```powershell
-docker compose logs backend
-docker compose down
-```
-
-The named PostgreSQL volume survives `down`. Do not use `down -v` unless you intend to delete it.
-The sample password is for local development only. Use URL-safe credentials in Compose's
-constructed database URL; percent-encode credentials in URLs when configuring remote PostgreSQL.
-
-## Native development
-
-Requirements: Python 3.12+, Node.js 22, and PostgreSQL (Docker is convenient).
-
-```powershell
-Copy-Item .env.example .env
-docker compose up -d db
 cd backend
 python -m venv .venv
 .venv\Scripts\Activate.ps1
@@ -59,6 +57,16 @@ pip install -r requirements-dev.txt
 alembic upgrade head
 uvicorn app.main:app --reload
 ```
+
+On macOS/Linux, activate with `source .venv/bin/activate`.
+Open [API docs](http://localhost:8000/docs).
+[Readiness](http://localhost:8000/health) must return HTTP 200 and `{"status":"ok"}`
+after the database is reachable and migrated. `/live` is process liveness only.
+
+Settings read the root `.env` regardless of the backend working directory.
+Missing or invalid `DATABASE_URL` fails configuration validation without printing its value.
+
+## Local frontend
 
 In another terminal, from `SignalScope`:
 
@@ -69,86 +77,98 @@ npm ci
 npm run dev
 ```
 
-The backend reads the root `.env` regardless of its working directory. Native Next.js
-reads `frontend/.env.local`. Compose sets the internal backend hostname automatically.
+The example sets `NEXT_PUBLIC_API_URL=http://localhost:8000`.
+Open [the dashboard](http://localhost:3000).
+For a local production build, run `npm run build` followed by `npm start`.
+The frontend has no implicit localhost API fallback.
 
-## Configuration
+## Environment variables
 
-| Variable | Purpose |
-| --- | --- |
-| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Local Compose database |
-| `DATABASE_URL` | SQLAlchemy PostgreSQL URL, using `postgresql+psycopg://` |
-| `BACKEND_URL` | Server-side Next.js connection to FastAPI |
-| `CORS_ORIGINS` | JSON list of explicitly allowed origins |
-| `ALPHA_VANTAGE_API_KEY` | Reserved for the stock provider phase |
-| `NEWS_API_KEY` | Reserved for the news provider phase |
-| `XHH_REQUEST_DELAY_SECONDS` | Reserved for researched public collection |
-| `NEWS_COLLECTION_INTERVAL`, `STOCK_COLLECTION_INTERVAL` | Reserved collector intervals |
+| Location | Variable | Purpose |
+| --- | --- | --- |
+| Root `.env` / Railway | `DATABASE_URL` | Private Supabase session-pooler or direct PostgreSQL URI |
+| Root `.env` / Railway | `CORS_ORIGINS` | JSON array of exact frontend origins; defaults to none |
+| Root `.env` / Railway | `FRONTEND_URL` | One additional exact frontend origin |
+| Frontend `.env.local` / Vercel | `NEXT_PUBLIC_API_URL` | Public FastAPI origin; HTTPS Railway origin on Vercel |
+| Railway | `PORT` | Supplied by Railway; used by Uvicorn |
+| Root `.env` / future collectors | `ALPHA_VANTAGE_API_KEY`, `NEWS_API_KEY` | Reserved provider credentials |
+| Root `.env` / future collectors | `XHH_REQUEST_DELAY_SECONDS` | Reserved request pacing |
+| Root `.env` / future collectors | `NEWS_COLLECTION_INTERVAL`, `STOCK_COLLECTION_INTERVAL` | Reserved interval settings; do not schedule anything yet |
 
-Keys are not needed for Phase 1. `.env` files, virtual environments, and local tool caches
-are excluded from version control. No actual provider keys are included.
+Frontend variables never contain database URLs, passwords, or provider keys.
+Changing a public Next.js variable on Vercel requires a new build/deployment.
+Vercel builds reject a missing, non-HTTPS, or loopback API origin.
+
+## Production configuration
+
+| Service | Repository root directory | Configuration |
+| --- | --- | --- |
+| Railway API | `/backend` | Config file path `/backend/railway.json`; Railpack |
+| Vercel frontend | `frontend` | `frontend/vercel.json`; Next.js preset |
+| Supabase | Hosted project | Existing Alembic migration applied through Railway pre-deploy |
+
+Railway installs `requirements.txt`, runs `alembic upgrade head` before deployment,
+and starts `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+It checks `/health` before making a deployment ready. No tables are manually recreated.
+The existing baseline migration remains unchanged.
+
+Connect both hosting projects to the same existing GitHub repository and production branch.
+This checkout's branch is currently `master`; use the actual branch in your repository.
+No remote resources, provider credentials, or cloud schedules have been created by this migration.
 
 ## Checks
 
-From `backend` with its virtual environment active:
+From `backend`, with its virtual environment active:
 
 ```powershell
 ruff check .
 ruff format --check .
 mypy app
 pytest
+```
+
+Unit tests isolate configuration and mock database checks. They do not contact Supabase.
+To test a real migrated development/test database:
+
+```powershell
 alembic upgrade head
 $env:RUN_DATABASE_TESTS = '1'
 pytest tests/test_database_integration.py
+Remove-Item Env:RUN_DATABASE_TESTS
 ```
-
-The regular suite mocks the database and does not prove a PostgreSQL connection. The opt-in
-integration test requires a migrated real database. CI runs both and tests migration rollback.
 
 From `frontend`:
 
 ```powershell
 npm run lint
 npm run typecheck
+npm test
 npm run build
-npm start
 ```
 
-## API
+GitHub Actions runs these checks without a database service. An optional manually dispatched
+Supabase integration job uses a dedicated `SUPABASE_TEST_DATABASE_URL` secret in the
+`supabase-test` GitHub environment, on the default branch only. It applies migrations forward;
+it never downgrades a shared database. No production scheduling runs in Actions.
 
-| Endpoint | Behavior |
-| --- | --- |
-| `GET /live` | Process liveness, HTTP 200 |
-| `GET /health` | HTTP 200 only with a reachable, migrated database; otherwise 503 |
-| `GET /docs` | Generated OpenAPI explorer |
+## API and preserved UI
 
-Watchlist, stock history, news, gaming, and dashboard data endpoints are planned for later phases.
+- `GET /live`: process liveness.
+- `GET /health`: database and baseline migration readiness; returns 503 on failure.
+- `GET /docs`: generated API documentation.
+- Overview, Stocks, Tech News, Gaming, Settings navigation, responsive light/dark styling,
+  offline/error/loading/empty states, and existing text are preserved.
 
-## Deployment and automation
+## Collection and remaining work
 
-Dockerfiles prepare both apps for container hosting. This Compose setup is local-only and
-binds published ports to loopback. No remote resources have been created. Public hosting,
-TLS, managed PostgreSQL, access control, rate limiting, and provider credentials must be
-configured and verified before production use.
+There are no collector commands in this checkout. Do not activate cron services until the
+stock, news, and gaming collectors are implemented and tested. Future schedules belong in
+Railway Cron only; see [the setup guide](docs/CLOUD_SETUP.md#future-collector-services).
 
-The `.github/workflows/ci.yml` workflow expects `SignalScope` to be the repository root.
-It is a verification workflow, not a collection scheduler. Collector workflows will be added
-after their corresponding commands work. Cloud scheduling will allow collection while a user's
-computer is off.
+The application will use APIs whenever possible and only collect publicly accessible web data
+where necessary. Xiaoheihe access research must precede any parser or browser deployment.
+No AI tokens are used by this foundation.
 
-## Data policy and roadmap
-
-The application uses APIs whenever possible and only collects publicly accessible web data
-where necessary. Xiaoheihe inspection, robots.txt, and applicable policies must be documented
-before implementing its collector. Authentication, CAPTCHA, and access controls will not be bypassed.
-
-Next: persistent stock watchlist and Alpha Vantage adapter, then news, Xiaoheihe research,
-gaming, unified summaries, and independent scheduled jobs. Optional AI daily briefs come only
-after the complete non-AI pipeline passes acceptance tests.
-
-Screenshots will be added after the foundation runs and is visually verified; no screenshot
-or live data is fabricated in this scaffold.
-
-Implementation references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation),
-[FastAPI database integration](https://fastapi.tiangolo.com/tutorial/sql-databases/), and
-[Compose startup dependencies](https://docs.docker.com/compose/how-tos/startup-order/).
+[Migration audit](docs/NO_DOCKER_MIGRATION.md) ·
+[Implementation status](docs/IMPLEMENTATION_STATUS.md) ·
+[Verification results](docs/VERIFICATION.md)

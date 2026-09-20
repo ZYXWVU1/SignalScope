@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from app.config import settings
 from app.main import app
 
 
@@ -26,3 +27,13 @@ def test_cors_does_not_allow_unconfigured_origin() -> None:
     with TestClient(app) as client:
         response = client.get("/live", headers={"Origin": "https://untrusted.example"})
     assert "access-control-allow-origin" not in response.headers
+
+
+def test_cors_allows_configured_frontend_preflight() -> None:
+    origin = settings.allowed_origins[0]
+    with TestClient(app) as client:
+        response = client.options(
+            "/health", headers={"Origin": origin, "Access-Control-Request-Method": "GET"}
+        )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == origin
