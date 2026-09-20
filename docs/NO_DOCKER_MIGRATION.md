@@ -94,8 +94,9 @@ No UI component or Alembic revision was replaced. Docker files, CI's database se
 and standalone-copy startup script are removed. No replacement container configuration exists.
 
 At the user's request, new cloud projects will be created/configured by following
-`CLOUD_SETUP.md`; passwords and connection strings stay outside chat. The local checkout
-still lacks a GitHub remote URL. Supabase migration and hosting verification remain pending,
+`CLOUD_SETUP.md`; passwords and connection strings stay outside chat. During setup, the
+checkout was linked to `https://github.com/ZYXWVU1/SignalScope.git` on `main`.
+Supabase migration and hosting verification remain pending,
 so this is a prepared source migration, not a completed public deployment.
 
 ## References checked

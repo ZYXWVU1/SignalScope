@@ -6,8 +6,9 @@ will not create those features. Keep all work in the current SignalScope reposit
 
 ## 1. Connect the existing GitHub repository
 
-The audit found an existing local Git repository and commit history, but no remote URL.
-From `SignalScope`, inspect:
+The initial audit found no remote; during setup the checkout was linked to
+`https://github.com/ZYXWVU1/SignalScope.git`, on `main`. Reuse this repository.
+From `SignalScope`, verify:
 
 ```powershell
 git remote -v
@@ -23,8 +24,8 @@ git remote add origin <EXISTING_REPOSITORY_CLONE_URL>
 git fetch origin
 ```
 
-Check its default branch and history before pushing. This local checkout currently uses
-`master`; do not assume the remote uses `main`. If histories diverge or are unrelated,
+Check its default branch and history before pushing. This local checkout now uses
+`main`. If histories diverge or are unrelated,
 reconcile them before uploading changes; never force-push to replace remote history.
 If `origin` already exists, reuse it after verifying it points to the intended repository.
 

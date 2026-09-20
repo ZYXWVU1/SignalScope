@@ -32,8 +32,8 @@ No provider calls or scraping happen on page load.
 Follow [the step-by-step cloud setup guide](docs/CLOUD_SETUP.md) to create your Supabase,
 Railway, and Vercel projects using your existing GitHub repository.
 
-This local repository currently has no Git remote. Do not create a replacement repository
-or force-push over an existing one. The guide explains how to link the existing repository.
+The existing remote is `https://github.com/ZYXWVU1/SignalScope.git`, on branch `main`.
+Reuse that repository; do not create a replacement or force-push over existing history.
 
 ## Local backend
 
@@ -113,7 +113,7 @@ It checks `/health` before making a deployment ready. No tables are manually rec
 The existing baseline migration remains unchanged.
 
 Connect both hosting projects to the same existing GitHub repository and production branch.
-This checkout's branch is currently `master`; use the actual branch in your repository.
+This checkout's branch is `main`; use that branch for production deployments.
 No remote resources, provider credentials, or cloud schedules have been created by this migration.
 
 ## Checks
